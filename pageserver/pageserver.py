@@ -56,8 +56,6 @@ def serve(sock, func):
     """
     while True:
         log.info("Attempting to accept a connection on {}".format(sock))
-       # sock.setblocking(False)
-        #(clientsocket, address) = sock.accept() #is waiting on connection, getting nothing
         clientsocket, address = sock.accept()
         _thread.start_new_thread(func, (clientsocket,))
 
@@ -91,13 +89,13 @@ def respond(sock):
     request = sock.recv(1024)
     request = str(request, encoding= "utf-8", errors='strict')
     log.info("--- Received request ----")
+    
     log.info("Request was {}\n***\n".format(request))
     parts = request.split()
     path = "/home/vboxuser/project-1/pages/" + parts[1]
-    #path = parts[1]
     file_str = ""
     file = open(path, "r").readlines()
-    if len(parts) > 1 and parts[0] == "GET" and os.path.exists(path):# and parts[1] in path:
+    if len(parts) > 1 and parts[0] == "GET" and os.path.exists(path):
         transmit(STATUS_OK,sock)
         for line in file:
             file_str += line
