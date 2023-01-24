@@ -19,7 +19,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s',
                     level=logging.INFO)
 log = logging.getLogger(__name__)
 # Logging level may be overridden by configuration 
-
+import os
 import socket    # Basic TCP/IP communication on the internet
 import _thread   # Response computation runs concurrently with main program
 
@@ -39,6 +39,7 @@ def listen(portnum):
     # Bind to port and make accessible from anywhere that has our IP address
     serversocket.bind(('', portnum))
     serversocket.listen(1)    # A real server would have multiple listeners
+    log.info("serversocket has been listened to")
     return serversocket
 
 
@@ -55,8 +56,11 @@ def serve(sock, func):
     """
     while True:
         log.info("Attempting to accept a connection on {}".format(sock))
-        (clientsocket, address) = sock.accept()
+       # sock.setblocking(False)
+        #(clientsocket, address) = sock.accept() #is waiting on connection, getting nothing
+        clientsocket, address = sock.accept()
         _thread.start_new_thread(func, (clientsocket,))
+
 
 
 ##
@@ -84,21 +88,33 @@ def respond(sock):
     Any valid GET request is answered with an ascii graphic of a cat.
     """
     sent = 0
-    request = sock.recv(1024)  # We accept only short requests
-    request = str(request, encoding='utf-8', errors='strict')
+    request = sock.recv(1024)
+    request = str(request, encoding= "utf-8", errors='strict')
     log.info("--- Received request ----")
     log.info("Request was {}\n***\n".format(request))
-
     parts = request.split()
-    if len(parts) > 1 and parts[0] == "GET":
-        transmit(STATUS_OK, sock)
-        transmit(CAT, sock)
+    path = "/home/vboxuser/project-1/pages/" + parts[1]
+    #path = parts[1]
+    file_str = ""
+    file = open(path, "r").readlines()
+    if len(parts) > 1 and parts[0] == "GET" and os.path.exists(path):# and parts[1] in path:
+        transmit(STATUS_OK,sock)
+        for line in file:
+            file_str += line
+        transmit(file_str, sock)
+    elif ".." in parts[1] or "~" in parts[1]:
+        transmit(STATUS_FORBIDDEN, sock)
+        transmit("Illegal characters used.",sock)
+    elif os.path.exists(path) == False:
+        transmit(STATUS_NOT_FOUND, sock)
+        transmit("File not found", sock)
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
         transmit("\nI don't handle this request: {}\n".format(request), sock)
 
     sock.shutdown(socket.SHUT_RDWR)
+    log.info("sock is shut")
     sock.close()
     return
 
