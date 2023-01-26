@@ -14,6 +14,7 @@
 """
 
 import config    # Configure from .ini files and command line
+import configparser
 import logging   # Better than print statements
 logging.basicConfig(format='%(levelname)s:%(message)s',
                     level=logging.INFO)
@@ -92,7 +93,12 @@ def respond(sock):
     
     log.info("Request was {}\n***\n".format(request))
     parts = request.split()
-    path = "/home/vboxuser/project-1/pages/" + parts[1]
+    
+    config = configparser.ConfigParser()
+    config.read("credentials.ini")
+
+    path = config["SERVER"]["DOCROOT"]
+    path = path + parts[1]
     file_str = ""
     file = open(path, "r").readlines()
     if len(parts) > 1 and parts[0] == "GET" and os.path.exists(path):
@@ -112,7 +118,6 @@ def respond(sock):
         transmit("\nI don't handle this request: {}\n".format(request), sock)
 
     sock.shutdown(socket.SHUT_RDWR)
-    log.info("sock is shut")
     sock.close()
     return
 
