@@ -100,18 +100,24 @@ def respond(sock):
     path = config["SERVER"]["DOCROOT"]
     path = path + parts[1]
     file_str = ""
-    file = open(path, "r").readlines()
-    if len(parts) > 1 and parts[0] == "GET" and os.path.exists(path):
-        transmit(STATUS_OK,sock)
-        for line in file:
-            file_str += line
-        transmit(file_str, sock)
-    elif ".." in parts[1] or "~" in parts[1]:
-        transmit(STATUS_FORBIDDEN, sock)
-        transmit("Illegal characters used.",sock)
-    elif os.path.exists(path) == False:
-        transmit(STATUS_NOT_FOUND, sock)
-        transmit("File not found", sock)
+   # file = open(path, "r").readlines()
+    if len(parts) > 1 and parts[0] == "GET":
+        if ".." in parts[1] or "~" in parts[1]:
+            transmit(STATUS_FORBIDDEN, sock)
+            transmit("Illegal characters used.",sock)
+       # elif os.path.isfile(f"{path}/{parts[1]}"):
+        elif os.path.exists(path):
+            transmit(STATUS_OK, sock)
+            file = open(path, "r").readlines()
+            #with open(f"{path}/{parts[1]}") as f:
+            #for line in file:
+             #   file_str = file.read()
+            #for line in file:
+              #  file_str += line
+            transmit(file_str, sock)
+        else:
+            transmit(STATUS_NOT_FOUND, sock)
+            transmit("File not found", sock)
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
